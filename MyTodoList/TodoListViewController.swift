@@ -65,10 +65,26 @@ class TodoListViewController: UITableViewController {
         saveItems()
         tableView.deselectRow(at: indexPath, animated: true)
         
-        tableView.beginUpdates()
-        tableView.reloadRows(at: [indexPath], with: UITableView.RowAnimation.none)
-        tableView.endUpdates()
+//        tableView.beginUpdates()
+//        tableView.reloadRows(at: [indexPath], with: UITableView.RowAnimation.none)
+//        tableView.endUpdates()
+        tableView.reloadData()
     }
+
+        override func tableView(_ tableView: UITableView, titleForDeleteConfirmationButtonForRowAt indexPath: IndexPath) -> String? {
+            return "删除"
+        }
+        // Override to support editing the table view.
+        override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+            if editingStyle == .delete {
+                itemArray.remove(at: indexPath.row)
+                saveItems()
+                // Delete the row from the data source
+                tableView.deleteRows(at: [indexPath], with: .fade)
+            } else if editingStyle == .insert {
+                // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
+            }
+        }
     
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         var textField = UITextField()
