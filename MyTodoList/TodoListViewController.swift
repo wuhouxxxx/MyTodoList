@@ -8,6 +8,7 @@
 
 import UIKit
 import RealmSwift
+import SwipeCellKit
 
 class TodoListViewController: UITableViewController{
     
@@ -23,35 +24,14 @@ class TodoListViewController: UITableViewController{
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view.
-//        if let items = defaults.array(forKey: "TodoListArray") as? [String] {
-//            todoItems = items
-//        print(dataFilePath as Any)
+        tableView.rowHeight = 80
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
-//        loadItems()
-        
-//        let newItem = Item()
-//        newItem.title = "go home"
-//        todoItems.append(newItem)
-        
-//        for index in 4...100 {
-//            let newItem = Item()
-//            newItem.title = "第\(index)件事"
-//            todoItems.append(newItem)
-//        }
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "TodoItemCell", for: indexPath)
-//        cell.textLabel?.text = todoItems[indexPath.row]
-
-        
-//        if todoItems[indexPath.row].done == false {
-//            cell.accessoryType = .none
-//        } else {
-//            cell.accessoryType = .checkmark
-//        }
+        let cell = tableView.dequeueReusableCell(withIdentifier: "TodoItemCell", for: indexPath) as! SwipeTableViewCell
+        cell.delegate = self
         if let item = todoItems?[indexPath.row] {
             cell.textLabel?.text = todoItems?[indexPath.row].title
             cell.accessoryType = item.done == true ? .checkmark : .none
@@ -67,14 +47,6 @@ class TodoListViewController: UITableViewController{
     }
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-//        if tableView.cellForRow(at: indexPath)?.accessoryType == .checkmark {
-//            tableView.cellForRow(at: indexPath)?.accessoryType = .none
-//        } else {
-//            tableView.cellForRow(at: indexPath)?.accessoryType = .checkmark
-//        }
-
-//        todoItems?[indexPath.row].done = !todoItems?[indexPath.row].done
-//        saveItems()
         if let item = todoItems?[indexPath.row] {
             do {
                 try realm.write {
@@ -85,29 +57,8 @@ class TodoListViewController: UITableViewController{
             }
         }
         tableView.deselectRow(at: indexPath, animated: true)
-        
-//        tableView.beginUpdates()
-//        tableView.reloadRows(at: [indexPath], with: UITableView.RowAnimation.none)
-//        tableView.endUpdates()
         tableView.reloadData()
     }
-
-//        override func tableView(_ tableView: UITableView, titleForDeleteConfirmationButtonForRowAt indexPath: IndexPath) -> String? {
-//            return "删除"
-//        }
-//        // Override to support editing the table view.
-//        override func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-//            if editingStyle == .delete {
-//                //删除数据库中数据
-//                context.delete(todoItems?[indexPath.row])
-//                todoItems?.remove(at: indexPath.row)
-//                saveItems()
-//                // Delete the row from the data source
-//                tableView.deleteRows(at: [indexPath], with: .fade)
-//            } else if editingStyle == .insert {
-//                // Create a new instance of the appropriate class, insert it into the array, and add a new row to the table view
-//            }
-//        }
 
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         var textField = UITextField()
@@ -165,29 +116,7 @@ class TodoListViewController: UITableViewController{
 //    }
     
     func loadItems() {
-//        if let data = try? Data(contentsOf: dataFilePath!) {
-//            let decoder = PropertyListDecoder()
-//            do {
-//                todoItems = try decoder.decode([Item].self, from: data)
-//            } catch {
-//                print("解码错误：\(error)")
-//            }
-//        }
-//        let request: NSFetchRequest<Item> = Item.fetchRequest()
-//        let categoryPredicate = NSPredicate(format: "parentCategory.name MATCHES %@", selectedCategory!.name!)
-//        if let addtionalPredicate = predicate {
-//            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, addtionalPredicate])
-//        } else {
-//            request.predicate = categoryPredicate
-//        }
-//        do {
-//            todoItems = try context.fetch(request)
-//            print("loaditem, todoItems.count: \(todoItems.count)")
-//        } catch {
-//            print("\(error)")
-//        }
-//        todoItems = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
-        todoItems = realm.objects(Item.self)
+        todoItems = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
         tableView.reloadData()
     }
 }
@@ -209,5 +138,35 @@ extension TodoListViewController: UISearchBarDelegate {
             }
             tableView.reloadData()
         }
+    }
+}
+
+extension TodoListViewController: SwipeTableViewCellDelegate {
+    func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath, for orientation: SwipeActionsOrientation) -> [SwipeAction]? {
+        guard orientation == .right else { return nil }
+        
+        let deleteAction = SwipeAction(style: .destructive, title: "删除") {
+            action, indexPath in
+            if let itemForDeletion = self.todoItems?[indexPath.row] {
+                do {
+                    try self.realm.write {
+                        self.realm.delete(itemForDeletion)
+                    }
+                } catch {
+                    print(error)
+                }
+//                tableView.reloadData()
+            }
+        }
+        
+        deleteAction.image = UIImage(named: "delete")
+        return [deleteAction]
+    }
+    
+    func tableView(_ tableView: UITableView, editActionsOptionsForRowAt indexPath: IndexPath, for orientation: SwipeActionsOrientation) -> SwipeOptions {
+        var options = SwipeOptions()
+        options.expansionStyle = .destructive
+//        options.transitionStyle = .border
+        return options
     }
 }
