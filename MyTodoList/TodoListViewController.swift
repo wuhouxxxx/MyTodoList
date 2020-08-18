@@ -9,6 +9,7 @@
 import UIKit
 import RealmSwift
 import SwipeCellKit
+import ChameleonFramework
 
 class TodoListViewController: UITableViewController{
     
@@ -16,6 +17,7 @@ class TodoListViewController: UITableViewController{
     var todoItems: Results<Item>?
     let realm = try! Realm()
 //    let dataFilePath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent("Items.plist")
+    @IBOutlet weak var searchBar: UISearchBar!
     var selectedCategory: Category? {
         didSet {
             loadItems()
@@ -25,8 +27,23 @@ class TodoListViewController: UITableViewController{
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.rowHeight = 80
+        tableView.separatorStyle = .none
         print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
         
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        if let colourHex = selectedCategory?.colour {
+            title = selectedCategory!.name
+            guard let navBar = navigationController?.navigationBar else {
+                fatalError()
+            }
+            if let navBarColor = UIColor(hexString: colourHex) {
+                navBar.barTintColor = navBarColor
+//                navBar.tintColor = ContrastColorOf(navBarColor, returnFlat: true)
+                searchBar.barTintColor = navBarColor
+            }
+        }
     }
 
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -35,6 +52,10 @@ class TodoListViewController: UITableViewController{
         if let item = todoItems?[indexPath.row] {
             cell.textLabel?.text = todoItems?[indexPath.row].title
             cell.accessoryType = item.done == true ? .checkmark : .none
+            if let colour = UIColor(hexString: selectedCategory!.colour)?.darken(byPercentage: CGFloat(indexPath.row) / (CGFloat(todoItems!.count) * 2))  {
+                cell.backgroundColor = colour
+//                cell.textLabel?.textColor = ContrastColorOf(colour, returnFlat: true)
+            }
         } else {
             cell.textLabel?.text = "没有事项"
         }
